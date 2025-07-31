@@ -99,3 +99,31 @@ The application uses `react-router-dom` to handle navigation. Here are the defin
 *   `/cart`: The shopping cart page.
 *   `/login`: The user login page.
 *   `/signup`: The user signup page.
+
+### LOGIN
+<img width="1396" height="672" alt="Screenshot 2025-07-31 at 10 46 16 PM" src="https://github.com/user-attachments/assets/a54b7a06-abc1-4bcf-9acc-1b35d0eb1521" />
+
+
+### SIGNUP
+<img width="1402" height="595" alt="Screenshot 2025-07-31 at 10 46 09 PM" src="https://github.com/user-attachments/assets/8c1d0595-63c2-4183-bcd9-2c8479884783" />
+
+### NAVBAR
+<img width="1440" height="115" alt="Screenshot 2025-07-31 at 10 45 11 PM" src="https://github.com/user-attachments/assets/cd4bdb89-d3cf-48c0-927d-87e1b38d6bfb" />
+
+### HOME PAGE
+<img width="1034" height="730" alt="Screenshot 2025-07-31 at 10 45 30 PM" src="https://github.com/user-attachments/assets/197d2115-c805-4d63-85f6-727a7b8f9fa4" />
+
+### FOOTER
+<img width="1363" height="760" alt="Screenshot 2025-07-31 at 10 45 44 PM" src="https://github.com/user-attachments/assets/91a4f2e0-ad5b-443a-9625-562a7ba73816" />
+
+### LIST OF FRUITS AND VEGETABLE
+<img width="1440" height="776" alt="Screenshot 2025-07-31 at 10 46 40 PM" src="https://github.com/user-attachments/assets/260a9114-6aff-407d-8458-92e13c0d9cf6" />
+
+### CART
+<img width="1440" height="573" alt="Screenshot 2025-07-31 at 10 47 07 PM" src="https://github.com/user-attachments/assets/11888843-d0f2-4732-8d39-27c703605dd8" />
+
+
+
+
+
+
