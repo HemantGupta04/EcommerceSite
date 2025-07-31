@@ -48,20 +48,26 @@ Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 The page will reload if you make edits.
 
 ## Folder Structure
+## 📁 Project Directory Structure
+
+```plaintext
 /src
-|-- /Components
-| |-- navbar.js
-| |-- footer.js
-| |-- fruits.js
-| |-- vegetables.js
-| |-- login.js
-| |-- signup.js
-|-- /Pages
-| |-- Home
-| |-- Cart
-|-- App.css
-|-- App.js
-|-- index.js
+├── /Components
+│   ├── navbar.js          # Navigation bar
+│   ├── footer.js          # Footer section
+│   ├── fruits.js          # Fruits listing component
+│   ├── vegetables.js      # Vegetables listing component
+│   ├── login.js           # Login form
+│   └── signup.js          # Signup form
+│
+├── /Pages
+│   ├── Home               # Landing page component
+│   └── Cart               # Cart page component
+│
+├── App.css               # Main styling file
+├── App.js                # Root component and routing
+└── index.js              # React entry point
+```
 
 ## Dependencies
 
