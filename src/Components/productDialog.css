@@ -1,0 +1,25 @@
+.product-content {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.product-image {
+    width: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.product-info {
+    flex: 1;
+}
+
+.buy-button {
+    background-color: #1976d2;
+    color: white;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 1rem;
+}

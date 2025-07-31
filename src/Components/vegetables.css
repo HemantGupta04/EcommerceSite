@@ -1,0 +1,49 @@
+.vegetable-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+.vegetable-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+
+.vegetable-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+.vegetable-details {
+    flex: 1;
+}
+
+.vegetable-details h4 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.vegetable-details p {
+    margin: 5px 0 10px;
+    color: #555;
+}
+
+.buy-button {
+    padding: 8px 16px;
+    background-color: #0073e6;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.buy-button:hover {
+    background-color: #005bb5;
+}
