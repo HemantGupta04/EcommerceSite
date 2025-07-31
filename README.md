@@ -117,10 +117,14 @@ The application uses `react-router-dom` to handle navigation. Here are the defin
 <img width="1363" height="760" alt="Screenshot 2025-07-31 at 10 45 44 PM" src="https://github.com/user-attachments/assets/91a4f2e0-ad5b-443a-9625-562a7ba73816" />
 
 ### LIST OF FRUITS AND VEGETABLE
-<img width="1440" height="776" alt="Screenshot 2025-07-31 at 10 46 40 PM" src="https://github.com/user-attachments/assets/260a9114-6aff-407d-8458-92e13c0d9cf6" />
+<img width="1439" height="727" alt="Screenshot 2025-07-31 at 10 46 33 PM" src="https://github.com/user-attachments/assets/f7718ac3-b87a-46de-a79e-bc34eb478163" />
+<img width="1440" height="776" alt="Screenshot 2025-07-31 at 10 46 40 PM" src="https://github.com/user-attachments/assets/0e6944eb-87a7-4df5-856f-acb56b1a041e" />
 
 ### CART
-<img width="1440" height="573" alt="Screenshot 2025-07-31 at 10 47 07 PM" src="https://github.com/user-attachments/assets/11888843-d0f2-4732-8d39-27c703605dd8" />
+<img width="1440" height="770" alt="Screenshot 2025-07-31 at 10 46 57 PM" src="https://github.com/user-attachments/assets/790b8e0c-1a01-4d90-ab92-74890d51ba3a" />
+<img width="1440" height="573" alt="Screenshot 2025-07-31 at 10 47 07 PM" src="https://github.com/user-attachments/assets/7363846e-de40-4a80-84b3-057b652f2a5c" />
+
+
 
 
 
