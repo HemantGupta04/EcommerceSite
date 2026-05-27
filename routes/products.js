@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require('path');
 const multer = require('multer');
 const Product = require('../models/Product');
 const User = require('../models/User');
@@ -7,18 +6,12 @@ const Wishlist = require('../models/Wishlist');
 const auth = require('../middleware/auth');
 const { haversineKm } = require('../utils/geo');
 const { notify } = require('../utils/notify');
+const { storage } = require('../utils/cloudinary');
 
 const router = express.Router();
 
 const RADIUS_KM = parseFloat(process.env.MAX_DELIVERY_RADIUS_KM) || 5;
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'uploads')),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`);
-    }
-});
 const upload = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 },
@@ -92,7 +85,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
             name,
             description,
             price: parseFloat(price),
-            image: req.file ? `/uploads/${req.file.filename}` : req.body.image,
+            image: req.file ? req.file.path : req.body.image,
             category,
             stockQuantity: stockQuantity ? parseInt(stockQuantity, 10) : 0,
             unit,
@@ -120,7 +113,7 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
         for (const k of updatable) {
             if (req.body[k] !== undefined) product[k] = req.body[k];
         }
-        if (req.file) product.image = `/uploads/${req.file.filename}`;
+        if (req.file) product.image = req.file.path;
         if (product.stockQuantity > 0) product.inStock = true;
         await product.save();
 
