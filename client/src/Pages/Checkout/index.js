@@ -42,8 +42,8 @@ export default function Checkout() {
     const placeOrder = async () => {
         setErr('');
         if (!mobile) return setErr('Mobile number required');
+        if (!loc) return setErr('Location required');
         if (items.length === 0) return setErr('Cart is empty');
-        const effectiveLoc = loc || { lat: 28.6139, lng: 77.2090 };
 
         const negotiationId = items.find(i => i.negotiationId)?.negotiationId;
 
@@ -52,7 +52,7 @@ export default function Checkout() {
             const { data } = await api.post('/orders', {
                 items: items.map(i => ({ product: i.productId, quantity: i.quantity })),
                 customerMobile: mobile,
-                customerLocation: effectiveLoc,
+                customerLocation: loc,
                 useWallet,
                 negotiationId
             });
@@ -93,7 +93,7 @@ export default function Checkout() {
                             {loc && <Chip color="success" size="small" label={`${loc.lat?.toFixed(3)}, ${loc.lng?.toFixed(3)}`} />}
                         </Stack>
                         <Typography variant="caption" color="text.secondary">
-                            Location is optional right now — a default will be used for testing.
+                            Note: vendor must be within 5 km of your location.
                         </Typography>
                     </Stack>
 

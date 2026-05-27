@@ -37,10 +37,10 @@ export default function Signup() {
         e.preventDefault();
         setErr('');
         if (form.password.length < 8) return setErr('Password must be at least 8 characters');
-        const effectiveLoc = loc || { lat: 28.6139, lng: 77.2090 };
+        if (!loc) return setErr('We need your location to find vendors within 5 km');
         setBusy(true);
         try {
-            const u = await signup({ ...form, location: effectiveLoc });
+            const u = await signup({ ...form, location: loc });
             nav(u.role === 'vendor' ? '/vendor' : '/', { replace: true });
         } catch (e2) {
             setErr(errorMessage(e2));
@@ -69,13 +69,10 @@ export default function Signup() {
 
                     <Stack direction="row" spacing={1} alignItems="center">
                         <Button variant="outlined" startIcon={<LocationOnIcon />} onClick={useMyLoc}>
-                            {loc ? 'Update location' : 'Use my location (optional)'}
+                            {loc ? 'Update location' : 'Use my location'}
                         </Button>
                         {loc && <Chip color="success" size="small" label={`${loc.lat.toFixed(3)}, ${loc.lng.toFixed(3)}`} />}
                     </Stack>
-                    <Typography variant="caption" color="text.secondary">
-                        Skipping for now? We'll use a default location for testing.
-                    </Typography>
 
                     <Button type="submit" variant="contained" size="large" disabled={busy}>
                         {busy ? 'Creating account…' : 'Create account'}
