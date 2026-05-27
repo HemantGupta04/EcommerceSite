@@ -1,10 +1,13 @@
-import React, { useContext, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './auth.css';
 import { MyContext } from "../App";
 
 export default function Login() {
     const context = useContext(MyContext);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (context?.setisheaderfootershow) {
@@ -18,6 +21,28 @@ export default function Login() {
         };
     }, [context]);
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('http://localhost:4000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                context.setislogin(true);
+                navigate('/');
+            } else {
+                alert(data.error);
+            }
+        } catch (err) {
+            alert('Login failed');
+        }
+    };
+
     return (
         <div className="auth-container">
             <div className="auth-image"></div>
@@ -27,14 +52,14 @@ export default function Login() {
                     <img src="https://img.icons8.com/color/16/google-logo.png" alt="google" /> Sign in with Google
                 </button>
                 <div className="text-center mb-3">or sign in with email</div>
-                <form>
+                <form onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label>Email</label>
-                        <input type="email" className="form-control" placeholder="you@example.com" />
+                        <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
                     </div>
                     <div className="mb-3">
                         <label>Password</label>
-                        <input type="password" className="form-control" placeholder="••••••••" />
+                        <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
                     </div>
                     <div className="d-flex justify-content-between mb-3">
                         <div></div>

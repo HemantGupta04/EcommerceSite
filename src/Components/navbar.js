@@ -12,7 +12,7 @@ import { MyContext } from '../App';
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const { islogin } = useContext(MyContext); 
+  const { islogin, user, setislogin, setUser } = useContext(MyContext); 
 
   const goToCart = () => {
     navigate('/cart');
@@ -20,6 +20,14 @@ export default function Navbar() {
 
   const goToLogin = () => {
     navigate('/login');
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setislogin(false);
+    setUser(null);
+    navigate('/');
   };
 
   return (
@@ -64,9 +72,13 @@ export default function Navbar() {
                     Sign In
                   </Button>
                 ) : (
-                  <Button className="circle account-btn">
-                    <MdAccountCircle />
-                  </Button>
+                  <div className="d-flex align-items-center gap-2">
+                    <Button className="circle account-btn">
+                      <MdAccountCircle />
+                    </Button>
+                    {user?.role === 'vendor' && <Link to="/vendor" className="btn btn-outline-primary">Dashboard</Link>}
+                    <Button onClick={logout} className="btn btn-outline-secondary">Logout</Button>
+                  </div>
                 )}
                 <p className="cart-label mb-0" onClick={goToCart} style={{ cursor: 'pointer' }}>CART</p>
                 <Button className="circle cart-btn" onClick={goToCart}><TiShoppingCart /></Button>

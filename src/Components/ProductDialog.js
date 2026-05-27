@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -10,11 +10,22 @@ import CloseIcon from "@mui/icons-material/Close";
 import Box from "@mui/material/Box";
 import { Divider, Chip, Rating } from "@mui/material";
 import QuantityBox from './QuantityBox';
+import { MyContext } from "../App";
 
 export default function ProductDialog({ open, onClose, fruit }) {
+    const { cart, setCart } = useContext(MyContext);
+    const [quantity, setQuantity] = useState(1);
+
     const handleQuantityChange = (val) => {
-        console.log("Quantity updated to:", val);
+        setQuantity(val);
     };
+
+    const addToCart = () => {
+        const item = { ...fruit, quantity };
+        setCart([...cart, item]);
+        onClose();
+    };
+
     if (!fruit) return null;
 
     return (
@@ -56,11 +67,8 @@ export default function ProductDialog({ open, onClose, fruit }) {
                         </Box>
 
                         <Box mt={1} display="flex" alignItems="center" gap={2}>
-                            <Typography variant="body2" sx={{ textDecoration: "line-through", color: "gray" }}>
-                                100 Ruppes
-                            </Typography>
                             <Typography variant="h6" color="primary">
-                                75 Ruppes (per Kg)
+                                ₹{fruit.price} (per Kg)
                             </Typography>
                             <Chip label="In Stock" color="success" size="small" />
                         </Box>
@@ -72,7 +80,7 @@ export default function ProductDialog({ open, onClose, fruit }) {
 
                         <Box display="flex" alignItems="center" mt={2} gap={1}>
                             <QuantityBox onChange={handleQuantityChange} />
-                            <Button variant="contained" color="primary" sx={{ ml: 2 }}>
+                            <Button variant="contained" color="primary" sx={{ ml: 2 }} onClick={addToCart}>
                                 Add to cart
                             </Button>
                         </Box>

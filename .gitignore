@@ -1,0 +1,27 @@
+node_modules/
+**/node_modules/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+client/.env
+client/.env.*
+
+# Build artifacts
+client/build/
+build/
+dist/
+
+# User-uploaded content (don't ship test images in git)
+uploads/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+
+# Misc
+coverage/
