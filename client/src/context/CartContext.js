@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 const CartContext = createContext(null);
-const KEY = 'cart:v1';
+const KEY = 'cart:v2';
 
 export const CartProvider = ({ children }) => {
     const [items, setItems] = useState([]);
@@ -21,21 +21,27 @@ export const CartProvider = ({ children }) => {
     const add = useCallback((product, quantity = 1, negotiation = null) => {
         setItems(prev => {
             const idx = prev.findIndex(i => i.productId === product._id);
+            const livePrice = negotiation?.agreedPrice
+                ?? (product.currentPrice ?? product.price);
             let next;
             if (idx >= 0) {
                 next = [...prev];
-                next[idx] = { ...next[idx], quantity: next[idx].quantity + quantity };
+                next[idx] = { ...next[idx], quantity: next[idx].quantity + quantity, price: livePrice };
             } else {
                 next = [...prev, {
                     productId: product._id,
                     name: product.name,
                     image: product.image,
-                    price: negotiation?.agreedPrice ?? product.price,
+                    price: livePrice,
+                    basePrice: product.price,
                     unit: product.unit,
                     quantity,
                     vendor: typeof product.vendor === 'object' ? product.vendor._id : product.vendor,
                     vendorName: product.vendor?.name,
-                    negotiationId: negotiation?._id
+                    negotiationId: negotiation?._id,
+                    prebookEnabled: !!product.prebook?.enabled,
+                    prebookDiscountPercent: product.prebook?.discountPercent || 0,
+                    pricingSchemeEnabled: !!product.pricingScheme?.enabled
                 }];
             }
             localStorage.setItem(KEY, JSON.stringify(next));

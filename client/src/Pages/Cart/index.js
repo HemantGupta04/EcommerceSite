@@ -1,17 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container, Paper, Typography, Box, IconButton, Button, Stack, Divider, Alert, TextField } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { fileUrl } from '../../api';
+import api, { fileUrl } from '../../api';
 
-const FALLBACK = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="%23eee" width="80" height="80"/></svg>';
+const FALLBACK = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="%23f5e7c3" width="80" height="80"/></svg>';
+
+const DEFAULT_FEE = 20;
+const DEFAULT_CAP = 200;
 
 export default function Cart() {
-    const { items, update, remove, total, multiVendor } = useCart();
+    const { items, update, remove, total, multiVendor, vendorIds } = useCart();
     const nav = useNavigate();
+    const [vendorSettings, setVendorSettings] = useState(null);
+
+    useEffect(() => {
+        if (!vendorIds[0]) return;
+        (async () => {
+            try {
+                const { data } = await api.get(`/products?vendor=${vendorIds[0]}`);
+                const v = data[0]?.vendor;
+                if (v?.vendorSettings) setVendorSettings(v.vendorSettings);
+            } catch { /* ignore */ }
+        })();
+    }, [vendorIds]);
+
+    const freeCap = vendorSettings?.freeDeliveryCap ?? DEFAULT_CAP;
+    const baseFee = vendorSettings?.deliveryFee ?? DEFAULT_FEE;
+    const deliveryFee = total >= freeCap ? 0 : baseFee;
+    const grand = total + deliveryFee;
 
     if (items.length === 0) {
         return (
@@ -60,13 +81,23 @@ export default function Cart() {
                         <Typography variant="body2">₹{total.toFixed(2)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="body2" color="text.secondary">Delivery</Typography>
-                        <Typography variant="body2" color="success.main">FREE (within 5 km)</Typography>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                            <LocalShippingIcon fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">Delivery</Typography>
+                        </Stack>
+                        <Typography variant="body2" color={deliveryFee === 0 ? 'success.main' : 'text.primary'}>
+                            {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
+                        </Typography>
                     </Box>
+                    {deliveryFee > 0 && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                            Add ₹{(freeCap - total).toFixed(0)} more for free delivery
+                        </Typography>
+                    )}
                     <Divider sx={{ my: 1 }} />
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                         <Typography variant="subtitle1" fontWeight={700}>Total</Typography>
-                        <Typography variant="subtitle1" fontWeight={700}>₹{total.toFixed(2)}</Typography>
+                        <Typography variant="subtitle1" fontWeight={700}>₹{grand.toFixed(2)}</Typography>
                     </Box>
                     <Button fullWidth variant="contained" size="large" disabled={multiVendor} onClick={() => nav('/checkout')}>
                         Checkout

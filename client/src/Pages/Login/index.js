@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Container, Paper, Typography, TextField, Button, Box, Alert, Link as MuiLink } from '@mui/material';
+import { Container, Paper, Typography, TextField, Button, Box, Alert, Link as MuiLink, Stack } from '@mui/material';
+import SpaIcon from '@mui/icons-material/Spa';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { errorMessage } from '../../api';
@@ -29,9 +30,14 @@ export default function Login() {
     };
 
     return (
-        <Container maxWidth="sm" sx={{ py: 6 }}>
+        <Box sx={{ py: 6, minHeight: 'calc(100vh - 64px)',
+            background: 'radial-gradient(circle at 100% 0%, rgba(246,185,59,0.18), transparent 40%), radial-gradient(circle at 0% 100%, rgba(31,111,67,0.18), transparent 45%)' }}>
+            <Container maxWidth="sm">
             <Paper sx={{ p: 4 }}>
-                <Typography variant="h4" align="center" gutterBottom>Welcome back</Typography>
+                <Stack direction="row" alignItems="center" spacing={1} justifyContent="center" sx={{ mb: 1 }}>
+                    <SpaIcon color="primary" />
+                    <Typography variant="h4" align="center">Welcome back</Typography>
+                </Stack>
                 <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
                     Sign in to your TrustMandi account
                 </Typography>
@@ -47,6 +53,7 @@ export default function Login() {
                     New here? <MuiLink component={Link} to="/signup">Create an account</MuiLink>
                 </Typography>
             </Paper>
-        </Container>
+            </Container>
+        </Box>
     );
 }

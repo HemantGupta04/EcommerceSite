@@ -13,6 +13,17 @@ const productSchema = new mongoose.Schema({
     negotiable: { type: Boolean, default: true },
     minAcceptablePrice: { type: Number },
     salesCount: { type: Number, default: 0 },
+    pricingScheme: {
+        enabled: { type: Boolean, default: false },
+        morningPrice: { type: Number },
+        eveningPrice: { type: Number },
+        startHour: { type: Number, default: 6, min: 0, max: 23 },
+        endHour: { type: Number, default: 20, min: 0, max: 23 }
+    },
+    prebook: {
+        enabled: { type: Boolean, default: false },
+        discountPercent: { type: Number, default: 0, min: 0, max: 50 }
+    },
     createdAt: { type: Date, default: Date.now }
 });
 

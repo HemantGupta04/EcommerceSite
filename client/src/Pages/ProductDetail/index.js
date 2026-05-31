@@ -7,13 +7,14 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import api, { errorMessage, fileUrl } from '../../api';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import HaggleDialog from '../../Components/HaggleDialog';
 
-const FALLBACK = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect fill="%23eee" width="600" height="400"/><text x="50%" y="50%" font-family="Arial" font-size="22" fill="%23999" dominant-baseline="middle" text-anchor="middle">No image</text></svg>';
+const FALLBACK = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect fill="%23f5e7c3" width="600" height="400"/><text x="50%" y="50%" font-family="Arial" font-size="22" fill="%23a07c2c" dominant-baseline="middle" text-anchor="middle">Fresh produce</text></svg>';
 
 export default function ProductDetail() {
     const { id } = useParams();
@@ -67,6 +68,9 @@ export default function ProductDetail() {
 
     const img = product.image ? fileUrl(product.image) : FALLBACK;
     const outOfStock = product.stockQuantity === 0;
+    const dynPrice = product.currentPrice ?? product.price;
+    const showsDecay = product.pricingScheme?.enabled && dynPrice < product.price;
+    const ps = product.pricingScheme;
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -77,17 +81,36 @@ export default function ProductDetail() {
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                    <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: 'wrap', gap: 1 }}>
                         <Chip label={product.category} color={product.category === 'fruit' ? 'secondary' : 'primary'} />
                         {product.negotiable && <Chip label="Negotiable" color="warning" />}
+                        {product.prebook?.enabled && (
+                            <Chip icon={<EventAvailableIcon />} color="primary" variant="outlined"
+                                label={product.prebook.discountPercent ? `Pre-book −${product.prebook.discountPercent}% + free delivery` : 'Pre-book'} />
+                        )}
+                        {product.freshness && <Chip label={`${product.freshness.emoji} ${product.freshness.label}`} variant="outlined" />}
                         {outOfStock && <Chip label="Out of stock" />}
                     </Stack>
                     <Typography variant="h4">{product.name}</Typography>
                     <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>{product.description}</Typography>
 
-                    <Typography variant="h3" color="primary" sx={{ mt: 2, fontWeight: 800 }}>
-                        ₹{product.price}<Typography component="span" variant="h6" color="text.secondary">/{product.unit || 'kg'}</Typography>
-                    </Typography>
+                    <Stack direction="row" alignItems="baseline" spacing={1.5} sx={{ mt: 2 }}>
+                        <Typography variant="h3" color="primary.dark" sx={{ fontWeight: 800 }}>
+                            ₹{dynPrice}<Typography component="span" variant="h6" color="text.secondary">/{product.unit || 'kg'}</Typography>
+                        </Typography>
+                        {showsDecay && (
+                            <Typography variant="h6" sx={{ textDecoration: 'line-through' }} color="text.secondary">
+                                ₹{product.price}
+                            </Typography>
+                        )}
+                    </Stack>
+                    {ps?.enabled && (
+                        <Alert severity="info" icon={false} sx={{ mt: 1.5, bgcolor: 'rgba(246,185,59,0.12)' }}>
+                            <Typography variant="body2">
+                                <b>Morning fresh</b>: ₹{ps.morningPrice} → <b>evening price</b>: ₹{ps.eveningPrice} ({ps.startHour}:00 – {ps.endHour}:00). Price refreshes through the day.
+                            </Typography>
+                        </Alert>
+                    )}
 
                     <Divider sx={{ my: 2 }} />
 
@@ -95,7 +118,7 @@ export default function ProductDetail() {
                         <Box sx={{ mb: 2 }}>
                             <Stack direction="row" spacing={1} alignItems="center">
                                 <StorefrontIcon fontSize="small" />
-                                <Typography variant="body2">{product.vendor.name}</Typography>
+                                <Typography variant="body2">{product.vendor.vendorSettings?.shopName || product.vendor.name}</Typography>
                             </Stack>
                             {product.vendor.location && (
                                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
@@ -124,7 +147,7 @@ export default function ProductDetail() {
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3 }}>
                         <Button variant="contained" size="large" disabled={outOfStock} onClick={addToCart}>
-                            Add to cart · ₹{(product.price * qty).toFixed(0)}
+                            Add to cart · ₹{(dynPrice * qty).toFixed(0)}
                         </Button>
                         {product.negotiable && !outOfStock && (
                             <Button variant="outlined" size="large" startIcon={<HandshakeIcon />} onClick={() => setHaggleOpen(true)}>

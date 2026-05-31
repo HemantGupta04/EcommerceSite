@@ -7,24 +7,38 @@ const auth = require('../middleware/auth');
 const { haversineKm } = require('../utils/geo');
 const { credit, debit, CASHBACK_RATE } = require('../utils/wallet');
 const { notify } = require('../utils/notify');
+const { computeDynamicPrice } = require('../utils/pricing');
 
 const router = express.Router();
 
 const RADIUS_KM = parseFloat(process.env.MAX_DELIVERY_RADIUS_KM) || 5;
+const DEFAULT_DELIVERY_FEE = 20;
+const DEFAULT_FREE_CAP = 200;
 
 function makeOtp() {
     return ('' + Math.floor(1000 + Math.random() * 9000));
 }
 
 function draftVendorMessage(order, customerName) {
-    const lines = order.items.map(i => `• ${i.quantity} ${i.name} @ ₹${i.negotiatedPrice ?? i.price}`).join('\n');
-    return `New order #${order._id.toString().slice(-6).toUpperCase()}\n${lines}\nTotal: ₹${order.total}\nCustomer: ${customerName} (${order.customerMobile})\nDistance: ~${order.distanceKm} km\nOTP at delivery: ${order.deliveryOtp}`;
+    const lines = order.items.map(i => {
+        const unit = i.negotiatedPrice ?? i.dynamicPrice ?? i.price;
+        return `• ${i.quantity} ${i.name} @ ₹${unit}`;
+    }).join('\n');
+    const prebookLine = order.isPrebook ? `\nPRE-BOOK for ${new Date(order.prebookFor).toLocaleString('en-IN')}` : '';
+    const feeLine = order.deliveryFee > 0 ? `\nDelivery fee: ₹${order.deliveryFee}` : '\nDelivery: FREE';
+    return `New order #${order._id.toString().slice(-6).toUpperCase()}\n${lines}${prebookLine}\nSubtotal: ₹${order.subtotal}${feeLine}\nTotal: ₹${order.total}\nCustomer: ${customerName} (${order.customerMobile})\nAddress: ${order.customerAddress}\nDistance: ~${order.distanceKm} km\nOTP at delivery: ${order.deliveryOtp}`;
 }
 
 router.post('/', auth, async (req, res) => {
-    const { items, customerMobile, customerLocation, useWallet, negotiationId } = req.body;
+    const {
+        items, customerMobile, customerAddress, customerLocation,
+        useWallet, negotiationId, isPrebook, prebookFor
+    } = req.body;
     if (!items?.length) return res.status(400).json({ error: 'Cart is empty' });
     if (!customerLocation?.lat) return res.status(400).json({ error: 'Location required' });
+    if (!customerAddress || customerAddress.trim().length < 5) {
+        return res.status(400).json({ error: 'Delivery address required (min 5 chars)' });
+    }
 
     try {
         const productIds = items.map(i => i.product);
@@ -50,15 +64,35 @@ router.post('/', auth, async (req, res) => {
             negotiatedPriceMap[neg.product.toString()] = neg.agreedPrice;
         }
 
+        const wantPrebook = !!isPrebook;
+        if (wantPrebook) {
+            const offending = products.find(p => !p.prebook?.enabled);
+            if (offending) {
+                return res.status(400).json({ error: `${offending.name} does not accept pre-bookings` });
+            }
+        }
+
         const lineItems = [];
         let subtotal = 0;
+        let prebookDiscount = 0;
         for (const i of items) {
             const p = products.find(x => x._id.toString() === i.product);
             if (p.stockQuantity > 0 && i.quantity > p.stockQuantity) {
                 return res.status(400).json({ error: `Only ${p.stockQuantity} ${p.unit} of ${p.name} left` });
             }
             const negPrice = negotiatedPriceMap[p._id.toString()];
-            const unitPrice = negPrice ?? p.price;
+            const dynamicPrice = computeDynamicPrice(p);
+            // Negotiated price wins; otherwise current dynamic price (or static base).
+            let unitPrice = negPrice ?? dynamicPrice;
+
+            let itemPrebookDisc = 0;
+            if (wantPrebook && p.prebook?.enabled && p.prebook?.discountPercent > 0 && !negPrice) {
+                const disc = unitPrice * (p.prebook.discountPercent / 100);
+                itemPrebookDisc = disc * i.quantity;
+                unitPrice = +(unitPrice - disc).toFixed(2);
+                prebookDiscount += itemPrebookDisc;
+            }
+
             const lineTotal = unitPrice * i.quantity;
             subtotal += lineTotal;
             lineItems.push({
@@ -66,18 +100,29 @@ router.post('/', auth, async (req, res) => {
                 name: p.name,
                 quantity: i.quantity,
                 price: p.price,
-                negotiatedPrice: negPrice
+                negotiatedPrice: negPrice,
+                dynamicPrice,
+                prebookDiscountPercent: wantPrebook ? (p.prebook?.discountPercent || 0) : 0
             });
         }
         subtotal = +subtotal.toFixed(2);
+        prebookDiscount = +prebookDiscount.toFixed(2);
+
+        // Delivery fee logic
+        const vs = vendor.vendorSettings || {};
+        const freeCap = vs.freeDeliveryCap ?? DEFAULT_FREE_CAP;
+        const baseFee = vs.deliveryFee ?? DEFAULT_DELIVERY_FEE;
+        let deliveryFee = subtotal >= freeCap ? 0 : baseFee;
+        if (wantPrebook) deliveryFee = 0; // pre-book → free delivery
 
         let walletApplied = 0;
+        const payableBeforeWallet = +(subtotal + deliveryFee).toFixed(2);
         if (useWallet) {
-            const { applied } = await debit(req.user.id, subtotal, 'Order payment');
+            const { applied } = await debit(req.user.id, payableBeforeWallet, 'Order payment');
             walletApplied = applied;
         }
 
-        const total = +(subtotal - walletApplied).toFixed(2);
+        const total = +(payableBeforeWallet - walletApplied).toFixed(2);
         const deliveryOtp = makeOtp();
 
         const order = await Order.create({
@@ -85,14 +130,19 @@ router.post('/', auth, async (req, res) => {
             vendor: vendor._id,
             items: lineItems,
             subtotal,
+            prebookDiscount,
+            deliveryFee,
             walletApplied,
             total,
             status: 'pending',
-            statusHistory: [{ status: 'pending', note: 'Order placed' }],
+            statusHistory: [{ status: 'pending', note: wantPrebook ? 'Pre-booked order placed' : 'Order placed' }],
             deliveryOtp,
             customerMobile,
+            customerAddress: customerAddress.trim(),
             customerLocation,
-            distanceKm: +distanceKm.toFixed(2)
+            distanceKm: +distanceKm.toFixed(2),
+            isPrebook: wantPrebook,
+            prebookFor: wantPrebook && prebookFor ? new Date(prebookFor) : undefined
         });
 
         const customer = await User.findById(req.user.id);
@@ -105,7 +155,8 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
-        await notify(vendor._id, 'order_new', 'New order received', order.vendorMessageDraft, { orderId: order._id });
+        await notify(vendor._id, 'order_new', wantPrebook ? 'New pre-book received' : 'New order received',
+            order.vendorMessageDraft, { orderId: order._id });
 
         const waLink = vendor.mobile
             ? `https://wa.me/${vendor.mobile.replace(/\D/g, '')}?text=${encodeURIComponent(order.vendorMessageDraft)}`
@@ -169,6 +220,26 @@ router.put('/:id/status', auth, async (req, res) => {
     }
 });
 
+async function finalizeDelivered(order, note) {
+    order.status = 'delivered';
+    order.statusHistory.push({ status: 'delivered', note });
+    const cashback = +(order.subtotal * CASHBACK_RATE).toFixed(2);
+    order.cashbackEarned = cashback;
+    await order.save();
+
+    if (cashback > 0) {
+        await credit(order.customer, cashback, `Cashback for order ${order._id}`, order._id);
+        await notify(order.customer, 'cashback',
+            `₹${cashback} cashback credited`,
+            `Earned ${(CASHBACK_RATE * 100)}% back on your delivered order`,
+            { orderId: order._id, amount: cashback });
+    }
+
+    await notify(order.customer, 'order_status', 'Order delivered',
+        `Enjoy your ${order.items.map(i => i.name).join(', ')}!`,
+        { orderId: order._id });
+}
+
 router.post('/:id/deliver', auth, async (req, res) => {
     const { otp } = req.body;
     try {
@@ -178,25 +249,28 @@ router.post('/:id/deliver', auth, async (req, res) => {
         if (order.status === 'delivered') return res.status(400).json({ error: 'Already delivered' });
         if (otp !== order.deliveryOtp) return res.status(400).json({ error: 'Wrong OTP' });
 
-        order.status = 'delivered';
-        order.statusHistory.push({ status: 'delivered', note: 'OTP verified at doorstep' });
+        await finalizeDelivered(order, 'OTP verified at doorstep');
+        res.json(order);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
 
-        const cashback = +(order.subtotal * CASHBACK_RATE).toFixed(2);
-        order.cashbackEarned = cashback;
-        await order.save();
+router.post('/:id/force-deliver', auth, async (req, res) => {
+    const { reason } = req.body;
+    if (!reason || reason.trim().length < 3) {
+        return res.status(400).json({ error: 'Please provide a reason (min 3 chars) for force-completion' });
+    }
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Not found' });
+        if (order.vendor.toString() !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+        if (order.status === 'delivered') return res.status(400).json({ error: 'Already delivered' });
+        if (order.status === 'cancelled') return res.status(400).json({ error: 'Order was cancelled' });
 
-        if (cashback > 0) {
-            await credit(order.customer, cashback, `Cashback for order ${order._id}`, order._id);
-            await notify(order.customer, 'cashback',
-                `₹${cashback} cashback credited`,
-                `Earned ${(CASHBACK_RATE * 100)}% back on your delivered order`,
-                { orderId: order._id, amount: cashback });
-        }
-
-        await notify(order.customer, 'order_status', 'Order delivered',
-            `Enjoy your ${order.items.map(i => i.name).join(', ')}!`,
-            { orderId: order._id });
-
+        order.forceCompleted = true;
+        order.forceCompleteReason = reason.trim();
+        await finalizeDelivered(order, `Force-completed by vendor: ${reason.trim()}`);
         res.json(order);
     } catch (err) {
         res.status(400).json({ error: err.message });

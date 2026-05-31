@@ -10,6 +10,7 @@ export default function Profile() {
     const { request } = useGeo();
     const [name, setName] = useState(user?.name || '');
     const [mobile, setMobile] = useState(user?.mobile || '');
+    const [address, setAddress] = useState(user?.address || '');
     const [loc, setLoc] = useState(user?.location || null);
     const [msg, setMsg] = useState(null);
     const [busy, setBusy] = useState(false);
@@ -28,7 +29,7 @@ export default function Profile() {
         setBusy(true);
         setMsg(null);
         try {
-            await api.put('/auth/me', { name, mobile, location: loc });
+            await api.put('/auth/me', { name, mobile, address, location: loc });
             await refreshMe();
             setMsg({ sev: 'success', text: 'Profile updated' });
         } catch (e2) {
@@ -51,6 +52,13 @@ export default function Profile() {
                 <Box component="form" onSubmit={save} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
                     <TextField label="Mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
+                    <TextField
+                        label={user.role === 'vendor' ? 'Shop / pickup address' : 'Delivery address'}
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        multiline minRows={2}
+                        placeholder="House/Shop no., street, landmark, area, city"
+                    />
                     <Stack direction="row" spacing={1} alignItems="center">
                         <Button variant="outlined" startIcon={<LocationOnIcon />} onClick={updateLoc}>
                             Update my location

@@ -5,7 +5,9 @@ const orderItemSchema = new mongoose.Schema({
     name: { type: String },
     quantity: { type: Number, required: true },
     price: { type: Number, required: true },
-    negotiatedPrice: { type: Number }
+    negotiatedPrice: { type: Number },
+    dynamicPrice: { type: Number },
+    prebookDiscountPercent: { type: Number, default: 0 }
 }, { _id: false });
 
 const statusEventSchema = new mongoose.Schema({
@@ -19,6 +21,8 @@ const orderSchema = new mongoose.Schema({
     vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     items: [orderItemSchema],
     subtotal: { type: Number, required: true },
+    prebookDiscount: { type: Number, default: 0 },
+    deliveryFee: { type: Number, default: 0 },
     walletApplied: { type: Number, default: 0 },
     cashbackEarned: { type: Number, default: 0 },
     total: { type: Number, required: true },
@@ -31,11 +35,16 @@ const orderSchema = new mongoose.Schema({
     statusHistory: [statusEventSchema],
     deliveryOtp: { type: String },
     customerMobile: { type: String, required: true },
+    customerAddress: { type: String, required: true },
     customerLocation: {
         lat: { type: Number, required: true },
         lng: { type: Number, required: true }
     },
     distanceKm: { type: Number },
+    isPrebook: { type: Boolean, default: false },
+    prebookFor: { type: Date },
+    forceCompleted: { type: Boolean, default: false },
+    forceCompleteReason: { type: String },
     vendorMessageDraft: { type: String },
     createdAt: { type: Date, default: Date.now, index: true }
 });
