@@ -18,13 +18,13 @@ import { useToast } from '../../context/ToastContext';
 const CATEGORY_COLORS = ['#1f6f43', '#ef6c1a', '#f6b93b', '#b14a2a'];
 
 const StatCard = ({ icon, label, value, color, sub }) => (
-    <Paper sx={{ p: 2.5, height: '100%' }}>
-        <Stack direction="row" spacing={2} alignItems="center">
-            <Box sx={{ bgcolor: color, color: 'white', p: 1.4, borderRadius: 2, display: 'flex' }}>{icon}</Box>
-            <Box sx={{ minWidth: 0 }}>
-                <Typography variant="caption" color="text.secondary">{label}</Typography>
-                <Typography variant="h5" fontWeight={800} noWrap>{value}</Typography>
-                {sub && <Typography variant="caption" color="text.secondary">{sub}</Typography>}
+    <Paper sx={{ p: { xs: 1.5, sm: 2.5 }, height: '100%' }}>
+        <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="center">
+            <Box sx={{ bgcolor: color, color: 'white', p: { xs: 1, sm: 1.4 }, borderRadius: 2, display: 'flex' }}>{icon}</Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" color="text.secondary" noWrap display="block">{label}</Typography>
+                <Typography fontWeight={800} noWrap sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>{value}</Typography>
+                {sub && <Typography variant="caption" color="text.secondary" noWrap display="block">{sub}</Typography>}
             </Box>
         </Stack>
     </Paper>
@@ -90,24 +90,24 @@ export default function VendorDashboard() {
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
             <Box sx={{
-                p: 3, mb: 3, borderRadius: 3,
+                p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 3,
                 background: 'linear-gradient(120deg, #1f6f43 0%, #3d9c6b 60%, #f6b93b 100%)',
                 color: '#fff', boxShadow: '0 12px 28px rgba(31,111,67,0.22)'
             }}>
-                <Typography variant="h4">Namaste, {user?.name?.split(' ')[0]} 🙏</Typography>
+                <Typography variant="h4" sx={{ fontSize: { xs: '1.6rem', sm: '2.125rem' } }}>Namaste, {user?.name?.split(' ')[0]} 🙏</Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
                     {settings.tagline || 'Fresh produce, happy customers — let’s grow your mandi today.'}
                 </Typography>
             </Box>
 
-            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                <TextField select size="small" value={days} onChange={(e) => setDays(e.target.value)} label="Window">
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }} justifyContent="space-between" sx={{ mb: 2 }}>
+                <TextField select size="small" value={days} onChange={(e) => setDays(e.target.value)} label="Window" sx={{ maxWidth: { xs: '100%', sm: 200 } }}>
                     {[7, 14, 30, 60, 90].map(d => <MenuItem key={d} value={d}>Last {d} days</MenuItem>)}
                 </TextField>
-                <Stack direction="row" spacing={1}>
-                    <Button startIcon={<DownloadIcon />} variant="outlined" onClick={() => download(`vendor/export/insights.xlsx?days=${days}`, `insights-${days}d.xlsx`)}>Insights</Button>
-                    <Button startIcon={<DownloadIcon />} variant="outlined" onClick={() => download('vendor/export/orders.xlsx', `orders.xlsx`)}>Orders</Button>
-                    <Button startIcon={<DownloadIcon />} variant="outlined" onClick={() => download('vendor/export/products.xlsx', `products.xlsx`)}>Products</Button>
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1, '& > button': { flex: { xs: 1, sm: '0 0 auto' } } }}>
+                    <Button size="small" startIcon={<DownloadIcon />} variant="outlined" onClick={() => download(`vendor/export/insights.xlsx?days=${days}`, `insights-${days}d.xlsx`)}>Insights</Button>
+                    <Button size="small" startIcon={<DownloadIcon />} variant="outlined" onClick={() => download('vendor/export/orders.xlsx', `orders.xlsx`)}>Orders</Button>
+                    <Button size="small" startIcon={<DownloadIcon />} variant="outlined" onClick={() => download('vendor/export/products.xlsx', `products.xlsx`)}>Products</Button>
                 </Stack>
             </Stack>
 
@@ -139,7 +139,7 @@ export default function VendorDashboard() {
                         <ResponsiveContainer width="100%" height="85%">
                             <BarChart data={data.topItems} layout="vertical">
                                 <XAxis type="number" />
-                                <YAxis dataKey="name" type="category" width={90} />
+                                <YAxis dataKey="name" type="category" width={70} tick={{ fontSize: 12 }} />
                                 <Tooltip />
                                 <Bar dataKey="revenue" fill="#ef6c1a" radius={[0, 6, 6, 0]} />
                             </BarChart>
@@ -235,10 +235,10 @@ export default function VendorDashboard() {
                             <Grid item xs={12} sm={6}>
                                 <TextField fullWidth label="Tagline" value={settings.tagline || ''} onChange={(e) => setSettings({ ...settings, tagline: e.target.value })} placeholder="e.g. Hand-picked at dawn from local farms" />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid item xs={12} sm={6}>
                                 <TextField fullWidth type="number" label="Delivery fee (₹)" value={settings.deliveryFee ?? ''} onChange={(e) => setSettings({ ...settings, deliveryFee: e.target.value })} helperText="Charged below the free cap" />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid item xs={12} sm={6}>
                                 <TextField fullWidth type="number" label="Free delivery above (₹)" value={settings.freeDeliveryCap ?? ''} onChange={(e) => setSettings({ ...settings, freeDeliveryCap: e.target.value })} helperText="Orders ≥ this amount → free delivery" />
                             </Grid>
                             <Grid item xs={12}>
@@ -249,7 +249,7 @@ export default function VendorDashboard() {
                         </Grid>
                         <Divider sx={{ my: 2 }} />
                         <Typography variant="caption" color="text.secondary">
-                            Pre-booked orders always ship free regardless of the cap.
+                            Pre-booked orders must be placed at least 1 day in advance and ship free when the subtotal is ≥ 50% of the free delivery cap.
                         </Typography>
                     </Paper>
                 </Grid>

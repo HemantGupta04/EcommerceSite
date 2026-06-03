@@ -41,7 +41,17 @@ export default function Checkout() {
     const subtotalAfterPrebook = +(total - prebookSavings).toFixed(2);
     const freeCap = vendorSettings?.freeDeliveryCap ?? DEFAULT_CAP;
     const baseFee = vendorSettings?.deliveryFee ?? DEFAULT_FEE;
-    const deliveryFee = isPrebook ? 0 : (subtotalAfterPrebook >= freeCap ? 0 : baseFee);
+    const prebookFreeThreshold = freeCap / 2;
+    const prebookQualifiesForFree = isPrebook && subtotalAfterPrebook >= prebookFreeThreshold;
+    const deliveryFee = prebookQualifiesForFree
+        ? 0
+        : (subtotalAfterPrebook >= freeCap ? 0 : baseFee);
+
+    const prebookMinDateTime = useMemo(() => {
+        const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }, []);
     const payableBeforeWallet = +(subtotalAfterPrebook + deliveryFee).toFixed(2);
     const walletApplied = useWallet ? Math.min(walletBalance, payableBeforeWallet) : 0;
     const payable = +(payableBeforeWallet - walletApplied).toFixed(2);
@@ -78,6 +88,9 @@ export default function Checkout() {
         if (!loc) return setErr('Location required');
         if (items.length === 0) return setErr('Cart is empty');
         if (isPrebook && !prebookFor) return setErr('Pick a pre-book date & time');
+        if (isPrebook && new Date(prebookFor).getTime() - Date.now() < 24 * 60 * 60 * 1000) {
+            return setErr('Pre-book must be at least 1 day in advance');
+        }
 
         const negotiationId = items.find(i => i.negotiationId)?.negotiationId;
 
@@ -151,18 +164,27 @@ export default function Checkout() {
                             <FormControlLabel
                                 control={<Switch checked={isPrebook} onChange={(e) => setIsPrebook(e.target.checked)} />}
                                 label={<Stack direction="row" spacing={1} alignItems="center">
-                                    <EventAvailableIcon fontSize="small" /><span>Pre-book this order (free delivery + extra discount)</span>
+                                    <EventAvailableIcon fontSize="small" /><span>Pre-book this order (extra discount + free delivery on ₹{prebookFreeThreshold.toFixed(0)}+)</span>
                                 </Stack>}
                             />
                             {isPrebook && (
-                                <TextField
-                                    type="datetime-local"
-                                    label="Deliver on"
-                                    value={prebookFor}
-                                    onChange={(e) => setPrebookFor(e.target.value)}
-                                    InputLabelProps={{ shrink: true }}
-                                    sx={{ mt: 1.5, maxWidth: 280 }}
-                                />
+                                <>
+                                    <TextField
+                                        type="datetime-local"
+                                        label="Deliver on"
+                                        value={prebookFor}
+                                        onChange={(e) => setPrebookFor(e.target.value)}
+                                        InputLabelProps={{ shrink: true }}
+                                        inputProps={{ min: prebookMinDateTime }}
+                                        helperText="Must be at least 1 day from now"
+                                        sx={{ mt: 1.5, maxWidth: 280 }}
+                                    />
+                                    {!prebookQualifiesForFree && (
+                                        <Alert severity="info" sx={{ mt: 1.5 }}>
+                                            Add ₹{(prebookFreeThreshold - subtotalAfterPrebook).toFixed(0)} more to unlock free delivery on pre-book.
+                                        </Alert>
+                                    )}
+                                </>
                             )}
                         </>
                     ) : (

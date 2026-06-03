@@ -70,6 +70,13 @@ router.post('/', auth, async (req, res) => {
             if (offending) {
                 return res.status(400).json({ error: `${offending.name} does not accept pre-bookings` });
             }
+            if (!prebookFor) {
+                return res.status(400).json({ error: 'Pre-book date & time required' });
+            }
+            const prebookAt = new Date(prebookFor).getTime();
+            if (Number.isNaN(prebookAt) || prebookAt - Date.now() < 24 * 60 * 60 * 1000) {
+                return res.status(400).json({ error: 'Pre-book must be at least 1 day in advance' });
+            }
         }
 
         const lineItems = [];
@@ -113,7 +120,7 @@ router.post('/', auth, async (req, res) => {
         const freeCap = vs.freeDeliveryCap ?? DEFAULT_FREE_CAP;
         const baseFee = vs.deliveryFee ?? DEFAULT_DELIVERY_FEE;
         let deliveryFee = subtotal >= freeCap ? 0 : baseFee;
-        if (wantPrebook) deliveryFee = 0; // pre-book → free delivery
+        if (wantPrebook && subtotal >= freeCap / 2) deliveryFee = 0; // pre-book → free delivery when subtotal ≥ 50% of cap
 
         let walletApplied = 0;
         const payableBeforeWallet = +(subtotal + deliveryFee).toFixed(2);
